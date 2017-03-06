@@ -34,7 +34,6 @@ import com.alibaba.dubbo.rpc.Invoker;
 import com.alibaba.dubbo.rpc.Result;
 import com.alibaba.dubbo.rpc.RpcContext;
 import com.alibaba.dubbo.rpc.RpcException;
-import com.alibaba.dubbo.rpc.RpcInvocation;
 import com.alibaba.dubbo.rpc.support.RpcUtils;
  
 /**
@@ -85,6 +84,8 @@ public class MonitorFilter implements Filter {
             String application = invoker.getUrl().getParameter(Constants.APPLICATION_KEY);
             String service = invoker.getInterface().getName(); // 获取服务名称
             String method = RpcUtils.getMethodName(invocation); // 获取方法名
+            String group = invoker.getUrl().getParameter(Constants.GROUP_KEY);
+            String version = invoker.getUrl().getParameter(Constants.VERSION_KEY);
             URL url = invoker.getUrl().getUrlParameter(Constants.MONITOR_KEY);
             Monitor monitor = monitorFactory.getMonitor(url);
             int localPort;
@@ -92,7 +93,6 @@ public class MonitorFilter implements Filter {
             String remoteValue;
             if (Constants.CONSUMER_SIDE.equals(invoker.getUrl().getParameter(Constants.SIDE_KEY))) {
                 // ---- 服务消费方监控 ----
-                context = RpcContext.getContext(); // 消费方必须在invoke()之后获取context信息
                 localPort = 0;
                 remoteKey = MonitorService.PROVIDER;
                 remoteValue = invoker.getUrl().getAddress();
@@ -120,7 +120,9 @@ public class MonitorFilter implements Filter {
                                 MonitorService.ELAPSED, String.valueOf(elapsed),
                                 MonitorService.CONCURRENT, String.valueOf(concurrent),
                                 Constants.INPUT_KEY, input,
-                                Constants.OUTPUT_KEY, output));
+                                Constants.OUTPUT_KEY, output,
+                                Constants.GROUP_KEY, group,
+                                Constants.VERSION_KEY, version));
         } catch (Throwable t) {
             logger.error("Failed to monitor count service " + invoker.getUrl() + ", cause: " + t.getMessage(), t);
         }

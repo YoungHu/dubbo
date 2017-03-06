@@ -61,7 +61,7 @@ public class DubboMonitor implements Monitor {
     public DubboMonitor(Invoker<MonitorService> monitorInvoker, MonitorService monitorService) {
         this.monitorInvoker = monitorInvoker;
         this.monitorService = monitorService;
-        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 60000);
+        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 10000);
         // 启动统计信息收集定时器
         sendFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
