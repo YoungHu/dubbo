@@ -222,7 +222,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (Constants.ANY_VALUE.equals(name)) {
             return toRootPath();
         }
-        return toRootDir() + URL.encode(name);
+        String group = url.getParameter(Constants.GROUP_KEY, "");
+        String path = toRootDir() + URL.encode(name);
+        if (!"".equals(group)){
+            path += Constants.PATH_SEPARATOR + group;
+        }
+        return path;
     }
 
     private String[] toCategoriesPath(URL url) {
