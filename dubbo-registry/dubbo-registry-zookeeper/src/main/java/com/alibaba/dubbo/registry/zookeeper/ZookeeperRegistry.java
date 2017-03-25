@@ -16,6 +16,7 @@
 package com.alibaba.dubbo.registry.zookeeper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -230,6 +231,33 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return path;
     }
 
+    private String[] toServicesPath(URL url) {
+        String name = url.getServiceInterface();
+        if (Constants.ANY_VALUE.equals(name)) {
+            return new String[]{toRootPath()};
+        }
+        String path = toRootDir() + URL.encode(name);
+        String group = url.getParameter(Constants.GROUP_KEY, "");
+        if (!"*".equals(group)){
+            if ("".equals(group)){
+                return new String[]{path};
+            }else {
+                return new String[]{path + Constants.PATH_SEPARATOR + group};
+            }
+        }
+        List<String> groups = zkClient.getChildren(path);
+        groups.remove(Constants.PROVIDERS_CATEGORY);
+        groups.remove(Constants.CONSUMERS_CATEGORY);
+        groups.remove(Constants.ROUTERS_CATEGORY);
+        groups.remove(Constants.CONFIGURATORS_CATEGORY);
+        String[] paths = new String[groups.size() + 1];
+        paths[0] = path;
+        for (int i=0; i< groups.size(); i++){
+            paths[i+1] = path + Constants.PATH_SEPARATOR + groups.get(i);
+        }
+        return paths;
+    }
+
     private String[] toCategoriesPath(URL url) {
         String[] categroies;
         if (Constants.ANY_VALUE.equals(url.getParameter(Constants.CATEGORY_KEY))) {
@@ -238,11 +266,17 @@ public class ZookeeperRegistry extends FailbackRegistry {
         } else {
             categroies = url.getParameter(Constants.CATEGORY_KEY, new String[] {Constants.DEFAULT_CATEGORY});
         }
-        String[] paths = new String[categroies.length];
+        List<String> paths = new ArrayList<String>();
         for (int i = 0; i < categroies.length; i ++) {
-            paths[i] = toServicePath(url) + Constants.PATH_SEPARATOR + categroies[i];
+            for(String path : toServicesPath(url)){
+                paths.add(path + Constants.PATH_SEPARATOR + categroies[i]);
+            }
         }
-        return paths;
+        String[] temps = new String[paths.size()];
+        for (int i=0; i<paths.size(); i++){
+            temps[i] = paths.get(i);
+        }
+        return temps;
     }
 
     private String toCategoryPath(URL url) {
