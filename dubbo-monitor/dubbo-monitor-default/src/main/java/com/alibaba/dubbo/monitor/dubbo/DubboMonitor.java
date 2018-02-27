@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.alibaba.dubbo.common.Constants;
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.logger.Logger;
 import com.alibaba.dubbo.common.logger.LoggerFactory;
@@ -61,7 +62,7 @@ public class DubboMonitor implements Monitor {
     public DubboMonitor(Invoker<MonitorService> monitorInvoker, MonitorService monitorService) {
         this.monitorInvoker = monitorInvoker;
         this.monitorService = monitorService;
-        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 10000);
+        this.monitorInterval = monitorInvoker.getUrl().getPositiveParameter("interval", 60000);
         // 启动统计信息收集定时器
         sendFuture = scheduledExecutorService.scheduleWithFixedDelay(new Runnable() {
             public void run() {
@@ -95,6 +96,7 @@ public class DubboMonitor implements Monitor {
             long maxOutput = numbers[7];
             long maxElapsed = numbers[8];
             long maxConcurrent = numbers[9];
+            String version = getUrl().getParameter(Constants.DEFAULT_PROTOCOL);
              
             // 发送汇总信息
             URL url = statistics.getUrl()
@@ -108,7 +110,8 @@ public class DubboMonitor implements Monitor {
                             MonitorService.MAX_INPUT, String.valueOf(maxInput),
                             MonitorService.MAX_OUTPUT, String.valueOf(maxOutput),
                             MonitorService.MAX_ELAPSED, String.valueOf(maxElapsed),
-                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent)
+                            MonitorService.MAX_CONCURRENT, String.valueOf(maxConcurrent),
+                            Constants.DEFAULT_PROTOCOL, version
                             );
             monitorService.collect(url);
             
