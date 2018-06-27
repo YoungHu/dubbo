@@ -240,7 +240,39 @@ public class ZookeeperRegistry extends FailbackRegistry {
         if (Constants.ANY_VALUE.equals(name)) {
             return toRootPath();
         }
-        return toRootDir() + URL.encode(name);
+        String group = url.getParameter(Constants.GROUP_KEY, "");
+        String path = toRootDir() + URL.encode(name);
+        if (!"".equals(group)) {
+           path += Constants.PATH_SEPARATOR + group;
+        }
+        return path;
+    }
+
+    private String[] toServicesPath(URL url) {
+        String name = url.getServiceInterface();
+        if (Constants.ANY_VALUE.equals(name)) {
+            return new String[]{toRootPath()};
+        }
+        String path = toRootDir() + URL.encode(name);
+        String group = url.getParameter(Constants.GROUP_KEY, "");
+        if (!"*".equals(group)){
+            if ("".equals(group)){
+                return new String[]{path};
+            }else {
+                return new String[]{path + Constants.PATH_SEPARATOR + group};
+            }
+        }
+        List<String> groups = zkClient.getChildren(path);
+        groups.remove(Constants.PROVIDERS_CATEGORY);
+        groups.remove(Constants.CONSUMERS_CATEGORY);
+        groups.remove(Constants.ROUTERS_CATEGORY);
+        groups.remove(Constants.CONFIGURATORS_CATEGORY);
+        String[] paths = new String[groups.size() + 1];
+        paths[0] = path;
+        for (int i=0; i < groups.size(); i++){
+            paths[i+1] = path + Constants.PATH_SEPARATOR + groups.get(i);
+        }
+        return paths;
     }
 
     private String[] toCategoriesPath(URL url) {
@@ -251,11 +283,13 @@ public class ZookeeperRegistry extends FailbackRegistry {
         } else {
             categories = url.getParameter(Constants.CATEGORY_KEY, new String[]{Constants.DEFAULT_CATEGORY});
         }
-        String[] paths = new String[categories.length];
+        List<String> paths = new ArrayList<String>();
         for (int i = 0; i < categories.length; i++) {
-            paths[i] = toServicePath(url) + Constants.PATH_SEPARATOR + categories[i];
+            for (String path : toServicesPath(url)){
+                paths.add(path + Constants.PATH_SEPARATOR + categories[i]);
+            }
         }
-        return paths;
+        return paths.toArray(new String[0]);
     }
 
     private String toCategoryPath(URL url) {
